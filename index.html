@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLE Device Controller - Edge Optimized</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 26px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .browser-badge {
+            background: #0078d4;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-container {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .status {
+            font-size: 16px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .device-info {
+            font-size: 14px;
+            color: #495057;
+            word-break: break-word;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        
+        .connected {
+            color: #28a745 !important;
+            font-weight: 600;
+        }
+        
+        .connected-bg {
+            border-color: #28a745 !important;
+            background: #f8fff9 !important;
+        }
+        
+        .scanning {
+            color: #0078d4 !important;
+        }
+        
+        .devices-list {
+            background: #f0f7ff;
+            border: 2px solid #0078d4;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        
+        .devices-list h3 {
+            color: #005a9e;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .device-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .device-item:hover {
+            background: #e7f3ff;
+            border-color: #0078d4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 120, 212, 0.1);
+        }
+        
+        .device-item.selected {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .device-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .device-uuid {
+            font-family: monospace;
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
+        
+        .device-id {
+            font-size: 11px;
+            color: #adb5bd;
+        }
+        
+        .no-devices {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-open {
+            background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%);
+            color: white;
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            color: white;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .connect-btn {
+            padding: 18px;
+            background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .connect-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .scan-btn {
+            padding: 15px;
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .scan-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #6c757d;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        
+        .debug-info h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .debug-log {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .icon {
+            font-size: 20px;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .btn, .connect-btn {
+                padding: 16px;
+                font-size: 16px;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            .devices-list {
+                max-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BLE Device Scanner <span class="browser-badge">Microsoft Edge</span></h1>
+        
+        <div id="statusContainer" class="status-container">
+            <div id="status" class="status">Ready to scan for devices</div>
+            <div id="deviceInfo" class="device-info"></div>
+        </div>
+        
+        <div id="devicesList" class="devices-list">
+            <h3>📡 Available BLE Devices</h3>
+            <div id="devicesContainer" class="no-devices">
+                No devices found yet. Click "Scan for Devices" to start.
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="openBtn" class="btn btn-open" disabled>
+                <span class="icon">⚡</span> Power (#O)
+            </button>
+            <button id="stopBtn" class="btn btn-stop" disabled>
+                <span class="icon">📊</span> Speed (#S)
+            </button>
+        </div>
+        
+        <div class="action-buttons">
+            <button id="connectBtn" class="connect-btn" disabled>
+                <span class="icon">🔗</span> Connect to Selected Device
+            </button>
+            <button id="scanBtn" class="scan-btn">
+                <span class="icon">🔍</span> Scan for BLE Devices
+            </button>
+        </div>
+        
+        <div class="debug-info">
+            <h4>Debug Information</h4>
+            <div id="debugLog" class="debug-log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let device = null;
+        let server = null;
+        let characteristic = null;
+        let isConnected = false;
+        let debugLog = [];
+        let discoveredDevices = [];
+        let selectedDeviceIndex = -1;
+        
+        // DOM Elements
+        const statusDiv = document.getElementById('status');
+        const statusContainer = document.getElementById('statusContainer');
+        const deviceInfoDiv = document.getElementById('deviceInfo');
+        const openBtn = document.getElementById('openBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const connectBtn = document.getElementById('connectBtn');
+        const scanBtn = document.getElementById('scanBtn');
+        const devicesContainer = document.getElementById('devicesContainer');
+        const debugLogDiv = document.getElementById('debugLog');
+        
+        // Initialize
+        window.addEventListener('load', initializeApp);
+        
+        function initializeApp() {
+            logDebug('App initialized');
+            logDebug(`User Agent: ${navigator.userAgent}`);
+            logDebug(`Platform: ${navigator.platform}`);
+            
+            // Check Web Bluetooth support
+            if (!navigator.bluetooth) {
+                updateStatus('❌ Web Bluetooth not supported in this browser', false);
+                connectBtn.disabled = true;
+                scanBtn.disabled = true;
+                logDebug('Web Bluetooth API not available');
+                showError('Web Bluetooth API is not available in your browser. Please use Microsoft Edge, Chrome, or Opera.');
+                return;
+            }
+            
+            logDebug('Web Bluetooth API is available');
+            updateStatus('✅ Ready to scan for devices', false);
+            
+            // Check if we're on HTTPS or localhost
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                logDebug('Warning: Page not served over HTTPS or localhost. Web Bluetooth may not work.');
+            }
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+        
+        function setupEventListeners() {
+            connectBtn.addEventListener('click', handleConnectClick);
+            scanBtn.addEventListener('click', handleScanClick);
+            openBtn.addEventListener('click', () => sendCommand('#O'));
+            stopBtn.addEventListener('click', () => sendCommand('#S'));
+        }
+        
+        async function handleConnectClick() {
+            if (isConnected) {
+                await disconnectDevice();
+            } else {
+                await connectToSelectedDevice();
+            }
+        }
+        
+        async function handleScanClick() {
+            await scanForDevices();
+        }
+        
+        // Update status display
+        function updateStatus(message, isConnectedStatus = false) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status';
+            statusContainer.className = 'status-container';
+            
+            if (isConnectedStatus && isConnected) {
+                statusContainer.classList.add('connected-bg');
+                statusDiv.classList.add('connected');
+            } else if (message.includes('Scanning')) {
+                statusDiv.classList.add('scanning');
+            }
+        }
+        
+        // Debug logging
+        function logDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            debugLog.push(logMessage);
+            
+            // Keep only last 15 messages
+            if (debugLog.length > 15) {
+                debugLog.shift();
+            }
+            
+            debugLogDiv.textContent = debugLog.join('\n');
+            debugLogDiv.scrollTop = debugLogDiv.scrollHeight;
+            console.log(`BLE Debug: ${message}`);
+        }
+        
+        // Show error message
+        function showError(message) {
+            devicesContainer.innerHTML = `<div class="no-devices" style="color: #dc3545;">${message}</div>`;
+        }
+        
+        // Display devices in the list
+        function displayDevices(devices) {
+            if (devices.length === 0) {
+                devicesContainer.innerHTML = '<div class="no-devices">No BLE devices found. Make sure Bluetooth is enabled and devices are in range.</div>';
+                connectBtn.disabled = true;
+                return;
+            }
+            
+            let html = '';
+            
+            devices.forEach((device, index) => {
+                const deviceName = device.name || 'Unknown Device';
+                const deviceId = device.id || 'N/A';
+                const hasUuids = device.uuids && device.uuids.length > 0;
+                const uuids = device.uuids || [];
+                const isSelected = index === selectedDeviceIndex;
+                
+                html += `
+                    <div class="device-item ${isSelected ? 'selected' : ''}" 
+                         onclick="selectDevice(${index})"
+                         data-index="${index}">
+                        <div class="device-name">
+                            ${getDeviceIcon(deviceName)} ${deviceName}
+                        </div>
+                        <div class="device-uuid">
+                            Device ID: ${deviceId.substring(0, 8)}...
+                        </div>
+                        ${hasUuids ? `
+                            <div class="device-uuid">
+                                Services: ${uuids.length}
+                                ${uuids.slice(0, 2).map(uuid => `
+                                    <br><small>${formatUuid(uuid)}</small>
+                                `).join('')}
+                                ${uuids.length > 2 ? `<br><small>+ ${uuids.length - 2} more...</small>` : ''}
+                            </div>
+                        ` : `
+                            <div class="device-uuid">No advertised services</div>
+                        `}
+                        <div class="device-id">
+                            Click to select
+                        </div>
+                    </div>
+                `;
+            });
+            
+            devicesContainer.innerHTML = html;
+            connectBtn.disabled = selectedDeviceIndex === -1;
+        }
+        
+        // Get icon for device type
+        function getDeviceIcon(deviceName) {
+            const name = deviceName.toLowerCase();
+            if (name.includes('phone') || name.includes('mobile')) return '📱';
+            if (name.includes('watch') || name.includes('band')) return '⌚';
+            if (name.includes('head') || name.includes('ear')) return '🎧';
+            if (name.includes('keyboard') || name.includes('mouse')) return '⌨️';
+            if (name.includes('speaker') || name.includes('sound')) return '🔊';
+            if (name.includes('sensor') || name.includes('meter')) return '📡';
+            if (name.includes('heart') || name.includes('health')) return '❤️';
+            return '📟';
+        }
+        
+        // Format UUID for display
+        function formatUuid(uuid) {
+            if (uuid.length > 24) {
+                return uuid.substring(0, 8) + '...' + uuid.substring(uuid.length - 4);
+            }
+            return uuid;
+        }
+        
+        // Select a device from the list
+        function selectDevice(index) {
+            selectedDeviceIndex = index;
+            displayDevices(discoveredDevices);
+            
+            const selectedDevice = discoveredDevices[index];
+            if (selectedDevice) {
+                const name = selectedDevice.name || 'Unknown Device';
+                const id = selectedDevice.id || 'N/A';
+                const uuids = selectedDevice.uuids || [];
+                
+                updateStatus(`Selected: ${name}`, false);
+                deviceInfoDiv.innerHTML = `
+                    <strong>${name}</strong><br>
+                    ID: ${id.substring(0, 16)}...<br>
+                    ${uuids.length > 0 ? `Services: ${uuids.length}` : 'No advertised services'}
+                `;
+                
+                connectBtn.disabled = false;
+                connectBtn.innerHTML = '<span class="icon">🔗</span> Connect to ' + (name.length > 15 ? name.substring(0, 15) + '...' : name);
+                
+                logDebug(`Selected device: ${name} (ID: ${id.substring(0, 8)}...)`);
+            }
+        }
+        
+        // Scan for nearby devices
+        async function scanForDevices() {
+            if (!navigator.bluetooth) {
+                updateStatus('Web Bluetooth not available', false);
+                return;
+            }
+            
+            logDebug('Starting BLE device scan...');
+            updateStatus('🔍 Scanning for BLE devices...', false);
+            scanBtn.disabled = true;
+            connectBtn.disabled = true;
+            discoveredDevices = [];
+            selectedDeviceIndex = -1;
+            
+            // Show scanning state
+            devicesContainer.innerHTML = '<div class="no-devices">Scanning... Please wait.</div>';
+            
+            try {
+                // Note: Web Bluetooth doesn't allow continuous scanning without user interaction
+                // We'll request device which opens the browser's device chooser
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [] // No services needed for scanning
+                });
+                
+                // Add the discovered device to our list
+                discoveredDevices = [device];
+                selectedDeviceIndex = 0;
+                
+                logDebug(`Found device: ${device.name || 'Unnamed'} (ID: ${device.id})`);
+                logDebug(`Device advertised UUIDs: ${device.uuids ? device.uuids.length : 0}`);
+                
+                if (device.uuids && device.uuids.length > 0) {
+                    device.uuids.forEach((uuid, index) => {
+                        logDebug(`  UUID ${index + 1}: ${uuid}`);
+                    });
+                }
+                
+                // Display the device
+                displayDevices(discoveredDevices);
+                
+                // Auto-select the first device
+                selectDevice(0);
+                
+                updateStatus(`Found: ${device.name || 'Unnamed Device'}`, false);
+                
+            } catch (error) {
+                if (error.name === 'NotFoundError') {
+                    updateStatus('No BLE devices found', false);
+                    showError('No Bluetooth devices found. Make sure:<br>1. Bluetooth is enabled on your computer<br>2. Your BLE device is powered on and in range<br>3. The device is in discoverable mode');
+                    logDebug('Scan: No devices found in user selection');
+                } else if (error.name === 'SecurityError') {
+                    updateStatus('Permission denied by user', false);
+                    showError('Bluetooth permission was denied. Please allow Bluetooth access when prompted.');
+                    logDebug('Scan: Permission denied by user');
+                } else if (error.name === 'InvalidStateError') {
+                    updateStatus('Bluetooth not available', false);
+                    showError('Bluetooth is not available. Check if Bluetooth is enabled on your computer.');
+                    logDebug('Scan: Bluetooth not available - ' + error.message);
+                } else {
+                    updateStatus(`Scan error: ${error.message}`, false);
+                    showError(`Error: ${error.message}`);
+                    logDebug(`Scan error: ${error.name} - ${error.message}`);
+                }
+            } finally {
+                scanBtn.disabled = false;
+            }
+        }
+        
+        // Connect to the selected device
+        async function connectToSelectedDevice() {
+            if (selectedDeviceIndex === -1 || !discoveredDevices[selectedDeviceIndex]) {
+                updateStatus('No device selected', false);
+                return;
+            }
+            
+            const selectedDevice = discoveredDevices[selectedDeviceIndex];
+            
+            logDebug(`Attempting connection to: ${selectedDevice.name || 'Unnamed'} (ID: ${selectedDevice.id})`);
+            updateStatus('Connecting to device...', false);
+            connectBtn.disabled = true;
+            scanBtn.disabled = true;
+            
+            try {
+                // Re-request the device to get connection permission
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: selectedDevice.name }],
+                    optionalServices: selectedDevice.uuids && selectedDevice.uuids.length > 0 
+                        ? selectedDevice.uuids 
+                        : ['battery_service', 'device_information']
+                });
+                
+                // Add disconnect listener
+                device.addEventListener('gattserverdisconnected', onDeviceDisconnected);
+                
+                logDebug(`Connecting to GATT server...`);
+                updateStatus('Connecting to GATT server...', false);
+                
+                // Connect to GATT server with timeout
+                const connectPromise = device.gatt.connect();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Connection timeout (10 seconds)')), 10000)
+                );
+                
+                server = await Promise.race([connectPromise, timeoutPromise]);
+                
+                logDebug('GATT server connected, discovering services...');
+                updateStatus('Discovering services...', false);
+                
+                // Get available services
+                const services = await server.getPrimaryServices();
+                logDebug(`Found ${services.length} service(s)`);
+                
+                if (services.length === 0) {
+                    throw new Error('No services found on device');
+                }
+                
+                // Display services info
+                services.forEach((service, index) => {
+                    logDebug(`Service ${index + 1}: ${service.uuid}`);
+                });
+                
+                // Try to get the first service and its characteristics
+                const service = services[0];
+                const characteristics = await service.getCharacteristics();
+                logDebug(`Found ${characteristics.length} characteristic(s) in first service`);
+                
+                // Find a writable characteristic
+                characteristic = characteristics.find(char => 
+                    char.properties.write || char.properties.writeWithoutResponse
+                );
+                
+                if (!characteristic) {
+                    characteristic = characteristics[0]; // Use first as fallback
+                    logDebug('No writable characteristic found, using first available');
+                }
+                
+                logDebug(`Using characteristic: ${characteristic.uuid}`);
+                logDebug(`Characteristic properties: ${JSON.stringify(characteristic.properties)}`);
+                
+                // Update UI
+                isConnected = true;
+                openBtn.disabled = false;
+                stopBtn.disabled = false;
+                connectBtn.innerHTML = '<span class="icon">🔌</span> Disconnect';
+                connectBtn.disabled = false;
+                scanBtn.disabled = false;
+                
+                updateStatus(`✅ Connected to ${device.name || 'BLE Device'}`, true);
+                deviceInfoDiv.innerHTML = `
+                    <strong>${device.name || 'BLE Device'}</strong><br>
+                    Service: ${formatUuid(service.uuid)}<br>
+                    Characteristic: ${formatUuid(characteristic.uuid)}<br>
+                    Properties: ${Object.keys(characteristic.properties).join(', ')}
+                `;
+                
+                logDebug('Connection established successfully');
+                
+            } catch (error) {
+                logDebug(`Connection error: ${error.name} - ${error.message}`);
+                
+                if (error.name === 'NotFoundError') {
+                    updateStatus('Device not found. It may be out of range.', false);
+                } else if (error.name === 'NetworkError') {
+                    updateStatus('Connection failed. Device may be busy.', false);
+                } else if (error.message.includes('timeout')) {
+                    updateStatus('Connection timeout. Device not responding.', false);
+                } else if (error.message.includes('GATT')) {
+                    updateStatus('GATT error. Device may not support required services.', false);
+                } else {
+                    updateStatus(`Connection failed: ${error.message}`, false);
+                }
+                
+                // Clean up on error
+                if (device && device.gatt && device.gatt.connected) {
+                    device.gatt.disconnect();
+                }
+                resetConnection();
+                
+            } finally {
+                scanBtn.disabled = false;
+            }
+        }
+        
+        // Send command to BLE device
+        async function sendCommand(command) {
+            if (!characteristic) {
+                updateStatus('Not connected to device', false);
+                return;
+            }
+            
+            logDebug(`Sending command: ${command}`);
+            
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(command);
+                
+                if (characteristic.properties.write) {
+                    await characteristic.writeValue(data);
+                } else if (characteristic.properties.writeWithoutResponse) {
+                    await characteristic.writeValueWithoutResponse(data);
+                } else {
+                    throw new Error('Characteristic is not writable');
+                }
+                
+                updateStatus(`Sent: ${command}`, true);
+                logDebug(`Command sent successfully: ${command}`);
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, false);
+                logDebug(`Command error: ${error.message}`);
+                
+                if (error.message.includes('disconnected') || error.message.includes('not connected')) {
+                    onDeviceDisconnected();
+                }
+            }
+        }
+        
+        // Handle device disconnection
+        function onDeviceDisconnected() {
+            logDebug('Device disconnected');
+            updateStatus('Device disconnected', false);
+            resetConnection();
+        }
+        
+        // Disconnect from device
+        async function disconnectDevice() {
+            logDebug('Disconnecting device...');
+            
+            try {
+                if (device && device.gatt && device.gatt.connected) {
+                    await device.gatt.disconnect();
+                    logDebug('Disconnected successfully');
+                }
+            } catch (error) {
+                logDebug(`Disconnect error: ${error.message}`);
+            } finally {
+                resetConnection();
+            }
+        }
+        
+        // Reset connection state
+        function resetConnection() {
+            device = null;
+            server = null;
+            characteristic = null;
+            isConnected = false;
+            
+            openBtn.disabled = true;
+            stopBtn.disabled = true;
+            connectBtn.innerHTML = '<span class="icon">🔗</span> Connect to Selected Device';
+            connectBtn.disabled = selectedDeviceIndex === -1;
+            
+            updateStatus('Ready to connect', false);
+            logDebug('Connection reset');
+        }
+    </script>
+</body>
+</html>
